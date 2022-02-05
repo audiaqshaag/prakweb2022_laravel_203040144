@@ -1,6 +1,12 @@
 <?php
 
+use App\Http\Controllers\DashboardPostController;
+use App\Models\User;
+use App\Models\Category;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\LoginController;
+use App\Http\Controllers\RegisterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,52 +39,53 @@ Route::get('/about', function () {
 
 
 
-Route::get('/blog', function () {
-    $blog_post = [
-        [
-            "title" => "Judul Post Pertama",
-            "slug" => "judul-post-pertama",
-            "author" => "Audi Aqsha",
-            "body" => "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Recusandae sapiente animi quaerat perferendis iste ratione. Consequuntur inventore architecto, nam sequi quasi eius quos fugiat, pariatur, quod nesciunt neque minima totam! Pariatur aspernatur enim beatae odio quidem provident voluptatum dolor fuga cum, accusamus quis ut porro quibusdam nesciunt autem voluptatibus laudantium? Iure rerum magni excepturi tempora illum quibusdam vero, natus sapiente inventore labore amet esse doloribus ab nobis cumque animi quo illo fugit corporis debitis quam neque praesentium! Iste, quae aliquid?"
-        ],
-        [
-            "title" => "Judul Post Kedua",
-            "slug" => "judul-post-kedua",
-            "author" => "Erdi Fajar",
-            "body" => "Lorem ipsum dolor sit amet consectetur adipisicing elit. Sint fugit eius pariatur ducimus odio, officia ullam est error reprehenderit excepturi! Maxime aperiam aut, eveniet, quo facilis est non quaerat et optio ipsam perspiciatis asperiores itaque maiores officia dicta obcaecati autem. Magnam modi dolore reiciendis commodi, asperiores rem cumque mollitia iusto ea consequatur sunt laudantium reprehenderit, eveniet quam obcaecati eos error ipsum sint possimus odit est, labore quos consectetur cupiditate! Natus odit veniam atque error reiciendis ullam ea explicabo ipsam vitae animi autem rem, doloremque delectus expedita maxime mollitia voluptas hic accusantium facilis obcaecati accusamus itaque nulla. Voluptatem eaque totam accusantium?"
-        ]
-    ];
-
-    return view('blog', [
-        "title" => "Post",
-        "posts" => $blog_post
-    ]);
-});
+Route::get('/blog', [PostController::class, 'index']);
 
 //halaman single post
 
-Route::get('post/{slug}', function ($slug) {
-    $blog_post = [
-        [
-            "title" => "Judul Post Pertama",
-            "slug" => "judul-post-pertama",
-            "author" => "Audi Aqsha",
-            "body" => "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Recusandae sapiente animi quaerat perferendis iste ratione. Consequuntur inventore architecto, nam sequi quasi eius quos fugiat, pariatur, quod nesciunt neque minima totam! Pariatur aspernatur enim beatae odio quidem provident voluptatum dolor fuga cum, accusamus quis ut porro quibusdam nesciunt autem voluptatibus laudantium? Iure rerum magni excepturi tempora illum quibusdam vero, natus sapiente inventore labore amet esse doloribus ab nobis cumque animi quo illo fugit corporis debitis quam neque praesentium! Iste, quae aliquid?"
-        ],
-        [
-            "title" => "Judul Post Kedua",
-            "slug" => "judul-post-kedua",
-            "author" => "Erdi Fajar",
-            "body" => "Lorem ipsum dolor sit amet consectetur adipisicing elit. Sint fugit eius pariatur ducimus odio, officia ullam est error reprehenderit excepturi! Maxime aperiam aut, eveniet, quo facilis est non quaerat et optio ipsam perspiciatis asperiores itaque maiores officia dicta obcaecati autem. Magnam modi dolore reiciendis commodi, asperiores rem cumque mollitia iusto ea consequatur sunt laudantium reprehenderit, eveniet quam obcaecati eos error ipsum sint possimus odit est, labore quos consectetur cupiditate! Natus odit veniam atque error reiciendis ullam ea explicabo ipsam vitae animi autem rem, doloremque delectus expedita maxime mollitia voluptas hic accusantium facilis obcaecati accusamus itaque nulla. Voluptatem eaque totam accusantium?"
-        ]
-    ];
+Route::get('post/{post:slug}', [PostController::class, 'show']);
 
-
-    foreach($blog_post as $post){
-        if($post["slug"]===$slug){
-            $new_post = $post;
-        }
-    }
-    
-    return view('post', ["title" => "Single Post","post"=>$new_post]);
+Route::get('categories', function () {
+    return view('categories', [
+        'title' => 'Post Categories',
+        'categories' => Category::all()
+    ]);
 });
+
+Route::get('categories/{category:slug}', function (Category $category) {
+    return view('blog', [
+        'title' => "Post By Category : $category->name",
+        'posts' => $category->posts->load('category', 'author')
+    ]);
+});
+
+
+Route::get('authors/{author:username}', function (User $author) {
+    return view('blog', [
+        'title' => "Post By Author : $author->name",
+        'posts' => $author->post->load('category', 'author')
+    ]);
+});
+
+
+Route::get('login', [LoginController::class, 'index'])->middleware('guest');
+Route::post('login', [LoginController::class, 'authenticate']);
+
+Route::post('logout', [LoginController::class, 'logout']);
+
+Route::get('register', [RegisterController::class, 'index'])->middleware('guest');
+Route::post('register', [RegisterController::class, 'store']);
+
+Route::get('dashboard/blog/{post:slug}', [DashboardPostController::class, 'show']);
+Route::post('/', [LoginController::class, 'logout']);
+
+Route::get('dashboard', function () {
+    return view('dashboard.index');
+})->middleware('auth');
+
+
+
+// Route::get('/dashboard/blog/checkSlug', [DashboardPostController::class, 'checkSlug'])->middleware('auth');
+Route::resource('/dashboard/blog', DashboardPostController::class)->middleware('auth');
+
+// Route::resource('/dashboard/categories', AdminCategoryController::class)->except('show')->middleware('admin');
